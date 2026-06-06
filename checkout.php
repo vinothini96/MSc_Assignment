@@ -52,7 +52,7 @@ $loyaltyPoints = get_user_loyalty_total($pdo, (int) $_SESSION['user_id']);
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Pincode *</label>
-                            <input type="text" name="pincode" class="form-control" pattern="[0-9]{6}" maxlength="6" value="<?= e($user['pincode'] ?? '') ?>" required>
+                            <input type="text" name="pincode" class="form-control" pattern="[0-9]{5}" maxlength="5" value="<?= e($user['pincode'] ?? '') ?>" required>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -63,7 +63,7 @@ $loyaltyPoints = get_user_loyalty_total($pdo, (int) $_SESSION['user_id']);
                         <label class="form-label">Payment Method</label>
                         <select name="payment_method" class="form-select">
                             <option value="cod">Cash on Delivery</option>
-                            <option value="online">Online Payment</option>
+                            <option value="online">Online Payment (Demo)</option>
                         </select>
                     </div>
                     <?php if ($loyaltyPoints > 0): ?>

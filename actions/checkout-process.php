@@ -19,8 +19,9 @@ $usePoints = isset($_POST['use_loyalty_points']);
 
 $userId = (int) $_SESSION['user_id'];
 
-if ($address === '' || $city === '' || $district === '' || !preg_match('/^[0-9]{6}$/', $pincode) || !preg_match('/^[0-9]{10}$/', preg_replace('/\D/', '', $phone))) {
+if ($address === '' || $city === '' || $district === '' || !preg_match('/^[0-9]{5}$/', $pincode) || !preg_match('/^[0-9]{10}$/', preg_replace('/\D/', '', $phone))) {
     flash('danger', 'Please fill all shipping details correctly.');
+
     redirect('../checkout.php');
 }
 

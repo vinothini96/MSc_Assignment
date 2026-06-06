@@ -58,25 +58,38 @@ function require_admin(): void
 
 function product_image_url(?string $filename): string
 {
+    // Resolve the absolute root of the project (EleganceSarees/) regardless of which
+    // config file was loaded (config.php defines BASE_PATH; constants.php does not).
+    $projectRoot = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__);
+
     if (!$filename) {
-        return ASSETS_IMAGES . 'products/default_saree.jpg';
+        return 'assets/images/products/default_saree.jpg';
     }
-    if (file_exists(BASE_PATH . '/' . UPLOAD_PRODUCTS_URL . $filename)) {
-        return UPLOAD_PRODUCTS_URL . $filename;
+
+    // Check the primary uploads directory first (admin-uploaded images go here)
+    $uploadPhysicalPath = $projectRoot . '/uploads/products/' . $filename;
+    if (file_exists($uploadPhysicalPath)) {
+        return 'uploads/products/' . $filename;
     }
+
+    // Fall back to bundled asset folders (seed/demo images)
     foreach (['sarees', 'products'] as $folder) {
-        $path = BASE_PATH . '/' . ASSETS_IMAGES . $folder . '/' . $filename;
-        if (file_exists($path)) {
-            return ASSETS_IMAGES . $folder . '/' . $filename;
+        $assetPath = $projectRoot . '/assets/images/' . $folder . '/' . $filename;
+        if (file_exists($assetPath)) {
+            return 'assets/images/' . $folder . '/' . $filename;
         }
     }
-    $mapped = [
-        'silk_saree_1.jpg' => ASSETS_IMAGES . 'sarees/silk_saree_1.jpg',
-        'bridal_saree.jpg' => ASSETS_IMAGES . 'sarees/bridal_saree.jpg',
-        'cotton_saree.jpg' => ASSETS_IMAGES . 'sarees/cotton_saree.jpg',
-        'designer_saree.jpg' => ASSETS_IMAGES . 'sarees/designer_saree.jpg',
-    ];
-    return $mapped[$filename] ?? ASSETS_IMAGES . 'products/default_saree.jpg';
+
+    // Final fallback to default placeholder
+    return 'assets/images/products/default_saree.jpg';
+}
+
+/**
+ * camelCase alias — used by product-detail.php and product-card.php
+ */
+function productImageUrl(?string $filename): string
+{
+    return product_image_url($filename);
 }
 
 function format_price(float $amount): string

@@ -48,7 +48,7 @@ $orders = $stmt->fetchAll();
             <div id="order-<?= $order['id'] ?>" class="accordion-collapse collapse <?= $i === 0 ? 'show' : '' ?>" data-bs-parent="#ordersAccordion">
                 <div class="accordion-body bg-white">
                     <p class="small text-muted mb-2">
-                        <?= e($order['shipping_address']) ?>, <?= e($order['city']) ?>, <?= e($order['state']) ?> - <?= e($order['pincode']) ?>
+                        <?= e($order['shipping_address']) ?>, <?= e($order['city']) ?>, <?= e($order['district']) ?> - <?= e($order['pincode']) ?>
                     </p>
                     <table class="table table-sm">
                         <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead>

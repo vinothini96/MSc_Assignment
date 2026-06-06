@@ -56,10 +56,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'Invalid image format.';
         } else {
             $imageName = $slug . '_' . time() . '.' . $ext;
-            $dest = dirname(__DIR__, 2) . '/uploads/products/' . $imageName;
-            if (!is_dir(dirname($dest))) {
-                mkdir(dirname($dest), 0755, true);
+            // dirname(__DIR__) = EleganceSarees/admin -> one level up = EleganceSarees/
+            $uploadDir = dirname(__DIR__) . '/uploads/products/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
             }
+            $dest = $uploadDir . $imageName;
             if (!move_uploaded_file($_FILES['image']['tmp_name'], $dest)) {
                 $errors[] = 'Image upload failed.';
             }
