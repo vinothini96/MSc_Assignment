@@ -1,0 +1,35 @@
+/**
+ * Admin dashboard styles
+ */
+.admin-sidebar {
+    min-height: calc(100vh - 56px);
+    background: #1a1a2e;
+    padding-top: 1rem;
+}
+.admin-sidebar .nav-link {
+    color: #adb5bd;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0;
+}
+.admin-sidebar .nav-link:hover,
+.admin-sidebar .nav-link.active {
+    background: #16213e;
+    color: #ff9900;
+}
+.stat-card {
+    border-left: 4px solid #ff9900;
+    transition: transform .2s;
+}
+.stat-card:hover { transform: translateY(-2px); }
+.stat-card.users { border-color: #3498db; }
+.stat-card.products { border-color: #2ecc71; }
+.stat-card.orders { border-color: #9b59b6; }
+.stat-card.revenue { border-color: #e74c3c; }
+.chart-placeholder {
+    height: 250px;
+    background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

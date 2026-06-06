@@ -1,0 +1,288 @@
+/**
+ * EleganceSarees Main Stylesheet - Modern E-commerce UI
+ */
+
+:root {
+    --primary: #232f3e;
+    --accent: #ff9900;
+    --accent-hover: #e88b00;
+    --success: #067d62;
+    --light-bg: #f3f3f3;
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--light-bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content {
+    flex: 1;
+}
+
+.navbar.bg-primary {
+    background: var(--primary) !important;
+}
+
+.navbar-brand,
+.nav-link {
+    color: #fff !important;
+}
+
+.nav-link:hover {
+    color: var(--accent) !important;
+}
+
+.cart-badge {
+    position: absolute;
+    top: 0;
+    right: -8px;
+    font-size: 0.65rem;
+}
+
+/* Hero slider */
+.hero-slider {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.hero-slide {
+    min-height: 320px;
+    background: linear-gradient(135deg, var(--primary) 0%, #37475a 100%);
+    display: flex;
+    align-items: center;
+    padding: 3rem;
+    color: #fff;
+}
+
+.hero-slide-with-image {
+    background-color: var(--primary);
+}
+
+.hero-slide-content {
+    position: relative;
+    z-index: 1;
+    max-width: 600px;
+}
+
+.hero-slide.accent {
+    background: linear-gradient(135deg, #c45500, var(--accent));
+}
+
+.hero-slide h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.hero-slide .btn {
+    background: var(--accent);
+    border: none;
+    color: #111;
+    font-weight: 600;
+}
+
+.hero-slide .btn:hover {
+    background: var(--accent-hover);
+}
+
+/* Product cards */
+.product-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+    transition: transform .2s, box-shadow .2s;
+    height: 100%;
+    overflow: hidden;
+}
+
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .12);
+}
+
+.product-card .card-img-top {
+    height: 200px;
+    object-fit: contain;
+    background: #fff;
+    padding: 1rem;
+}
+
+.product-card .sale-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #cc0c39;
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.price {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #b12704;
+}
+
+.price-old {
+    text-decoration: line-through;
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.stars {
+    color: var(--accent);
+    letter-spacing: 1px;
+}
+
+/* Category pills */
+.category-pill {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 4px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    text-decoration: none;
+    color: #333;
+    transition: all .2s;
+}
+
+.category-pill:hover,
+.category-pill.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+/* Search autocomplete */
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 0 0 8px 8px;
+    z-index: 1000;
+    display: none;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: var(--card-shadow);
+}
+
+.search-suggestions.show {
+    display: block;
+}
+
+.search-suggestions a {
+    display: block;
+    padding: 10px 15px;
+    color: #333;
+    text-decoration: none;
+    border-bottom: 1px solid #eee;
+}
+
+.search-suggestions a:hover {
+    background: #f7f7f7;
+}
+
+/* Product detail */
+.product-detail-img {
+    max-height: 400px;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 8px;
+    padding: 2rem;
+}
+
+.qty-input {
+    width: 80px;
+}
+
+/* Cart & checkout */
+.cart-table img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+}
+
+.order-summary {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+}
+
+/* Footer */
+.site-footer a {
+    color: #adb5bd;
+    text-decoration: none;
+}
+
+.site-footer a:hover {
+    color: var(--accent);
+}
+
+/* Admin uses separate admin.css */
+.page-header {
+    background: #fff;
+    padding: 1.5rem 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Banners grid on home */
+.promo-banner {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+    min-height: 120px;
+}
+
+.promo-banner i {
+    font-size: 2.5rem;
+    color: var(--accent);
+}
+
+/* Reviews */
+.review-item {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+}
+
+/* Pagination */
+.pagination .page-link {
+    color: var(--primary);
+}
+
+.pagination .page-item.active .page-link {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+/* Confirmation page */
+.order-success-icon {
+    font-size: 4rem;
+    color: var(--success);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero-slide h1 {
+        font-size: 1.75rem;
+    }
+
+    .hero-slide {
+        min-height: 240px;
+        padding: 2rem;
+    }
+}
