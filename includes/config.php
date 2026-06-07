@@ -21,8 +21,13 @@ define('UPLOAD_PRODUCTS', BASE_PATH . '/uploads/products/');
 define('UPLOAD_PRODUCTS_URL', 'uploads/products/');
 define('ASSETS_IMAGES', 'assets/images/');
 
-// Session
+// Session — delegate all session startup to includes/session.php.
+// config.php must NOT call session_start() directly, because session cookie
+// security params must be set before the very first session_start() call.
+// Pages that load config.php without going through session.php get a basic
+// session only; protected pages always load header.php → session.php first.
 if (session_status() === PHP_SESSION_NONE) {
+    // Minimal safe start — session.php applies full security config when available.
     session_start();
 }
 

@@ -3,7 +3,8 @@
 > **Project:** EleganceSarees — Online Saree E-Commerce Platform  
 > **Stack:** Core PHP (PDO), MySQL, Bootstrap 5, Vanilla JavaScript  
 > **Server:** Apache via XAMPP | **Database:** `saree_shop_db`  
-> **Base URL:** `http://localhost/EleganceSarees`
+> **Base URL:** `http://localhost/EleganceSarees`  
+> **Last Updated:** June 2026 — Session expiry & logout security fixes applied
 
 ---
 
@@ -318,30 +319,82 @@ Note: This path does NOT include `db.php`, so pages using `init.php` must call `
 
 ### File: `includes/session.php`
 
-Called at the start of every request via `init.php` or `config.php`.
+Called at the start of every request. Pages using `includes/header.php` reach it via `config.php`; pages using `includes/init.php` include it directly.
 
-**Cookie settings applied:**
+### Configurable Constants
+
+Three constants control the session lifecycle. They can be overridden by defining them **before** `session.php` is included:
+
+| Constant | Default | Description |
+|----------|---------|-------------|
+| `SESSION_IDLE_TIMEOUT` | `1800` (30 min) | Seconds of inactivity before the session is destroyed |
+| `SESSION_ABSOLUTE_TTL` | `28800` (8 hours) | Maximum session age regardless of activity |
+| `SESSION_REGEN_INTERVAL` | `300` (5 min) | How often the session ID is rotated |
+
+### Cookie Settings
+
+Applied via `session_set_cookie_params()` **before** `session_start()`, so they take effect on the very first cookie issued:
+
 ```php
 session_set_cookie_params([
-    'lifetime' => 0,         // Session ends when browser closes
-    'path'     => '/',       // Available across entire site
-    'secure'   => false,     // No HTTPS requirement (local dev)
+    'lifetime' => 0,         // Cookie expires when the browser closes (no persistent cookie)
+    'path'     => '/',       // Available across the entire site
+    'secure'   => false,     // Set to true when serving over HTTPS
     'httponly' => true,      // Cookie NOT accessible via JavaScript (XSS protection)
-    'samesite' => 'Lax',     // CSRF protection — not sent on cross-site POSTs
+    'samesite' => 'Lax',     // Not sent on cross-site POST requests (CSRF protection)
 ]);
 ```
 
-**Session ID regeneration** (prevents session fixation attacks):
+`lifetime => 0` means the browser-side cookie dies when the browser closes. Server-side expiry is enforced separately (see below).
+
+### Three-Layer Expiry System
+
+Every request runs three checks in sequence:
+
+#### Layer 1 — Idle Timeout
 ```php
-if (!isset($_SESSION['created'])) {
-    $_SESSION['created'] = time();
-} elseif (time() - $_SESSION['created'] > 1800) {   // 30 minutes
-    session_regenerate_id(true);                       // New ID, old one deleted
-    $_SESSION['created'] = time();
+if (isset($_SESSION['last_activity'])
+    && ($now - $_SESSION['last_activity']) > SESSION_IDLE_TIMEOUT) {
+    // Full teardown: clear data, expire cookie, destroy file, start fresh
 }
 ```
+If `last_activity` is older than 30 minutes, the session is fully destroyed and a new empty one is started. The user will be asked to log in again on their next protected page visit.
 
-**Session variables used across the application:**
+#### Layer 2 — Absolute TTL
+```php
+if (isset($_SESSION['session_start_time'])
+    && ($now - $_SESSION['session_start_time']) > SESSION_ABSOLUTE_TTL) {
+    // Same full teardown
+}
+```
+Even an active user who never goes idle is force-logged-out after 8 hours. This prevents sessions from living indefinitely through continuous use.
+
+#### Layer 3 — Session ID Rotation (anti-fixation)
+```php
+if (($now - $_SESSION['_regen_time']) > SESSION_REGEN_INTERVAL) {
+    session_regenerate_id(true); // deletes the old session file
+    $_SESSION['_regen_time'] = $now;
+}
+```
+Every 5 minutes a new session ID is issued and the old one is deleted server-side. This limits the window an attacker has to exploit a stolen or fixated session ID.
+
+### Timestamp Lifecycle
+
+```
+Login / Register
+      │
+      └── Sets three timestamps in $_SESSION:
+              session_start_time  ← never updated (absolute age anchor)
+              last_activity       ← updated on EVERY request by session.php
+              _regen_time         ← updated when session ID is rotated
+
+Every subsequent request (via session.php):
+      ├── Check: now - last_activity  > 1800 → destroy
+      ├── Check: now - session_start_time > 28800 → destroy
+      └── Update: last_activity = now
+```
+
+### Session Variables
 
 | Variable | Set When | Used For |
 |----------|----------|----------|
@@ -352,7 +405,9 @@ if (!isset($_SESSION['created'])) {
 | `$_SESSION['admin_name']` | Admin login | Admin display name |
 | `$_SESSION['guest_cart']` | Add to cart (guest) | Stores cart items as array |
 | `$_SESSION['flash']` | Any page | One-time notification messages |
-| `$_SESSION['created']` | First request | Session age tracking |
+| `$_SESSION['session_start_time']` | Login / Register / Admin login | Absolute TTL anchor |
+| `$_SESSION['last_activity']` | Every request | Idle timeout tracking |
+| `$_SESSION['_regen_time']` | Login / ID rotation | Session ID rotation timer |
 
 ---
 
@@ -401,6 +456,10 @@ actions/login-process.php
         │       $_SESSION['user_id']    = (int) $user['id']
         │       $_SESSION['user_name']  = $user['full_name']
         │       $_SESSION['user_email'] = $user['email']
+        │       // Session timestamps stamped for idle + absolute TTL tracking:
+        │       $_SESSION['session_start_time'] = time()
+        │       $_SESSION['last_activity']      = time()
+        │       $_SESSION['_regen_time']        = time()
         │
         ├── 7. Guest cart merge:
         │       sync_guest_cart_to_db($pdo, $user['id'])
@@ -469,6 +528,10 @@ admin/login.php (POST handler)
         ├── 4. Session creation (on success):
         │       $_SESSION['admin_id']   = (int) $admin['id']
         │       $_SESSION['admin_name'] = $admin['full_name']
+        │       // Session timestamps stamped for idle + absolute TTL tracking:
+        │       $_SESSION['session_start_time'] = time()
+        │       $_SESSION['last_activity']      = time()
+        │       $_SESSION['_regen_time']        = time()
         │       redirect('index.php')
         │
         └── 5. On failure:
@@ -501,15 +564,21 @@ if (!$isLoginPage) {
 
 ### Admin Logout
 
-`admin/logout.php`:
+`admin/logout.php` — full session teardown (previously only removed two keys):
 ```php
-require_once dirname(__DIR__, 2) . '/includes/config.php';
-unset($_SESSION['admin_id'], $_SESSION['admin_name']);
-// Does NOT destroy the full session — user session preserved
+// Clear ALL session data (not just admin keys — session file must not linger)
+$_SESSION = [];
+// Expire the PHPSESSID cookie in the browser
+if (ini_get('session.use_cookies')) {
+    $p = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+}
+// Destroy the server-side session file
+session_destroy();
 header('Location: login.php');
 ```
 
-Only the admin-specific session keys are removed. The PHP session itself is not destroyed, allowing a customer who is also an admin (edge case) to remain logged in as a user.
+This is a complete teardown. Both admin and user session keys are removed, the cookie is expired in the browser, and the session file is deleted from the server.
 
 ---
 
@@ -558,6 +627,10 @@ actions/register-process.php
         │       $_SESSION['user_id']    = $userId
         │       $_SESSION['user_name']  = $fullName
         │       $_SESSION['user_email'] = $email
+        │       // Session timestamps stamped for idle + absolute TTL tracking:
+        │       $_SESSION['session_start_time'] = time()
+        │       $_SESSION['last_activity']      = time()
+        │       $_SESSION['_regen_time']        = time()
         │
         ├── 7. Guest cart merge:
         │       sync_guest_cart_to_db($pdo, $userId)
@@ -579,34 +652,49 @@ The registration form uses `novalidate` attribute (disables browser native valid
 
 ## 8. Logout Flow
 
-### Customer Logout (`logout.php` at root)
+Three logout handlers exist. All now perform a complete, identical teardown sequence:
+
+1. `$_SESSION = []` — clear all session variables in memory
+2. `setcookie(session_name(), '', time() - 42000, ...)` — expire the PHPSESSID cookie in the browser (sets it to a past timestamp so the browser discards it immediately)
+3. `session_destroy()` — delete the session file from the server's filesystem
+
+### Customer Logout — `logout.php` (root, used by navbar)
 ```php
 require_once __DIR__ . '/includes/init.php';
-$_SESSION = [];                        // Clear all session data
+$_SESSION = [];
 if (ini_get('session.use_cookies')) {
-    // Expire the session cookie in the browser
     $p = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000, $p['path'], ...);
+    setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
 }
-session_destroy();                     // Destroy server-side session
-header('Location: /EleganceSarees/index.php');
+session_destroy();
+header('Location: ' . BASE_URL . '/index.php');
 ```
 
-This is a full, clean logout:
-1. Clears all `$_SESSION` variables (including guest cart, flash messages)
-2. Expires the PHPSESSID cookie in the browser
-3. Destroys the session file server-side
-4. Redirects to homepage
-
-### Alternative Logout (`actions/logout.php`)
+### Customer Logout — `actions/logout.php` (alternate, used by some pages)
 ```php
 require_once dirname(__DIR__) . '/includes/config.php';
+$_SESSION = [];
+if (ini_get('session.use_cookies')) {
+    $p = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+}
 session_destroy();
-session_start();    // Starts fresh session (no cookie expiry step)
 header('Location: ../index.php');
 ```
 
-A simpler version used by the navbar link. Destroys the session and immediately starts a fresh one.
+### Admin Logout — `admin/logout.php`
+```php
+require_once dirname(__DIR__) . '/includes/config.php';
+$_SESSION = [];   // Clears both admin AND user keys
+if (ini_get('session.use_cookies')) {
+    $p = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+}
+session_destroy();
+header('Location: login.php');
+```
+
+Previously `admin/logout.php` only called `unset($_SESSION['admin_id'], $_SESSION['admin_name'])`, leaving the session file alive on the server and the cookie active in the browser. A shared-computer attacker could have continued the session. This has been fixed to perform the same full teardown as the customer logout handlers.
 
 ---
 
@@ -1466,10 +1554,14 @@ The version in `js/` is simpler — separate listeners per form ID.
 - Passwords never logged or stored in plain text
 
 ### Session Security
-- `httponly=true` → session cookie inaccessible to JavaScript
-- `samesite=Lax` → CSRF protection for cross-site requests
-- Session ID regenerated every 30 minutes (`session_regenerate_id(true)`)
+- `httponly=true` — session cookie inaccessible to JavaScript (XSS protection)
+- `samesite=Lax` — CSRF protection for cross-site requests
+- **Idle timeout**: session destroyed after 30 minutes of inactivity (`SESSION_IDLE_TIMEOUT`)
+- **Absolute TTL**: session destroyed after 8 hours regardless of activity (`SESSION_ABSOLUTE_TTL`)
+- **Session ID rotation**: new ID issued every 5 minutes, old file deleted (`SESSION_REGEN_INTERVAL`)
+- `session_regenerate_id(true)` — old session file deleted immediately on rotation
 - Admin and user sessions use separate keys — no privilege escalation possible
+- All three logout handlers perform a complete teardown: clear data → expire cookie → destroy file
 
 ### Authentication Checks
 - All protected pages call `require_login()` or `require_admin()` at the top
@@ -1492,6 +1584,26 @@ The version in `js/` is simpler — separate listeners per form ID.
 
 ## 28. Known Issues & Notes
 
+### ~~Session ID Not Expiring~~ — FIXED
+**Previously:** `session.php` only tracked when the session ID was last regenerated (`$_SESSION['created']`), not when the user last did anything. There was no idle timeout and no absolute TTL — a logged-in user would stay authenticated indefinitely as long as the browser kept the cookie.
+
+**Fixed:** Three-layer expiry now enforced on every request:
+- **Idle timeout** (30 min) via `$_SESSION['last_activity']` updated per request
+- **Absolute TTL** (8 hours) via `$_SESSION['session_start_time']` set at login
+- **Session ID rotation** (every 5 min) via `$_SESSION['_regen_time']`
+
+All three timestamps are stamped at login, registration, and admin login. All three logout handlers now perform a full teardown (clear data + expire cookie + destroy file).
+
+### ~~Incomplete Admin Logout~~ — FIXED
+**Previously:** `admin/logout.php` only called `unset($_SESSION['admin_id'], $_SESSION['admin_name'])`, leaving the session file alive on the server and the cookie active in the browser.
+
+**Fixed:** Admin logout now performs the same full teardown as customer logout.
+
+### ~~`actions/logout.php` Re-started Session After Destroy~~ — FIXED
+**Previously:** Called `session_destroy()` then immediately `session_start()` without expiring the browser cookie, effectively undoing the destroy.
+
+**Fixed:** Proper sequence — clear `$_SESSION`, expire cookie, destroy file.
+
 ### Dual Naming Convention (Active Bug Risk)
 Pages using `includes/init.php` call functions with camelCase names (`isLoggedIn()`, `getDB()`, `requireLogin()`, `formatPrice()`, `renderStars()`, `getProductPrice()`, `recordRecentlyViewed()`, `updateProductRating()`) that are not defined in `functions.php`. These pages will throw fatal errors:
 - `products.php`
@@ -1502,7 +1614,7 @@ Pages using `includes/init.php` call functions with camelCase names (`isLoggedIn
 - `admin/coupons.php`
 
 ### Two Config Files
-`includes/config.php` and `config/constants.php` define overlapping constants with different names. Pages must be aware of which bootstrap path they use.
+`includes/config.php` and `config/constants.php` define overlapping constants with different names. Pages must be aware of which bootstrap path they use. `config.php` now defers full session initialisation to `session.php` — it only calls a bare `session_start()` as a fallback for pages that reach it without going through `session.php` first.
 
 ### Missing DB Columns
 `products.avg_rating`, `products.review_count`, `products.sale_price`, `products.is_active` are referenced in newer pages but not in the SQL dump schema. These columns only exist if the database was updated manually after the dump.
@@ -1519,6 +1631,15 @@ Order confirmations, status updates, registration welcome emails — none are se
 ### Demo Payment Only
 No real payment gateway. "Online Payment" option is a placeholder.
 
+### No CSRF Tokens
+Form submissions do not include hidden CSRF tokens. All state-changing forms (login, register, checkout, profile update, admin actions) are vulnerable to cross-site request forgery.
+
+### No Brute-Force Protection
+No rate limiting or account lockout on the login forms. An attacker can attempt unlimited password guesses.
+
+### `APP_DEBUG = true` in Config
+Should be set to `false` in production to suppress detailed error output.
+
 ---
 
-*Documentation generated from full source analysis of EleganceSarees project — June 2026*
+*Documentation updated June 2026 — Session expiry, idle timeout, and logout security fixes applied*

@@ -32,9 +32,15 @@ if (!$user || !password_verify($password, $user['password'])) {
     redirect('/EleganceSarees/login.php?redirect=' . urlencode($redirect));
 }
 
-$_SESSION['user_id'] = (int) $user['id'];
-$_SESSION['user_name'] = $user['full_name'];
+$_SESSION['user_id']    = (int) $user['id'];
+$_SESSION['user_name']  = $user['full_name'];
 $_SESSION['user_email'] = $user['email'];
+
+// Stamp session timestamps so idle timeout and absolute TTL work correctly.
+// These are read by includes/session.php on every subsequent request.
+$_SESSION['session_start_time'] = time();
+$_SESSION['last_activity']      = time();
+$_SESSION['_regen_time']        = time();
 
 // Sync guest cart
 sync_guest_cart_to_db($pdo, (int) $user['id']);

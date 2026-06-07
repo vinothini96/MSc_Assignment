@@ -15,8 +15,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$username]);
         $admin = $stmt->fetch();
         if ($admin && password_verify($password, $admin['password'])) {
-            $_SESSION['admin_id'] = (int) $admin['id'];
+            $_SESSION['admin_id']   = (int) $admin['id'];
             $_SESSION['admin_name'] = $admin['full_name'];
+
+            // Stamp session timestamps for idle timeout and absolute TTL tracking.
+            $_SESSION['session_start_time'] = time();
+            $_SESSION['last_activity']      = time();
+            $_SESSION['_regen_time']        = time();
+
             redirect('index.php');
         }
     }

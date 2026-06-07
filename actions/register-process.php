@@ -51,9 +51,14 @@ $stmt = $pdo->prepare('INSERT INTO users (full_name, email, phone, password, add
 $stmt->execute([$fullName, $email, $phone, $hash, $address, $city, $district, $pincode]);
 
 $userId = (int) $pdo->lastInsertId();
-$_SESSION['user_id'] = $userId;
-$_SESSION['user_name'] = $fullName;
+$_SESSION['user_id']    = $userId;
+$_SESSION['user_name']  = $fullName;
 $_SESSION['user_email'] = $email;
+
+// Stamp session timestamps for idle timeout and absolute TTL tracking.
+$_SESSION['session_start_time'] = time();
+$_SESSION['last_activity']      = time();
+$_SESSION['_regen_time']        = time();
 
 sync_guest_cart_to_db($pdo, $userId);
 
