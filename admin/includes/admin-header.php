@@ -37,6 +37,21 @@ if (!$isLoginPage) {
             <a class="nav-link <?= $adminPage === 'users' ? 'active' : '' ?>" href="users.php"><i class="bi bi-people me-2"></i> Users</a>
             <a class="nav-link <?= $adminPage === 'admins' ? 'active' : '' ?>" href="admins.php"><i class="bi bi-shield-lock me-2"></i> Admins</a>
             <a class="nav-link <?= $adminPage === 'banners' ? 'active' : '' ?>" href="banners.php"><i class="bi bi-images me-2"></i> Banners</a>
+            <?php
+            // Unread messages badge — only query when not on login page
+            $unreadMsgCount = 0;
+            try {
+                $unreadMsgCount = (int) $pdo->query(
+                    "SELECT COUNT(*) FROM contact_messages WHERE status = 'unread'"
+                )->fetchColumn();
+            } catch (Exception $e) { /* table may not exist yet */ }
+            ?>
+            <a class="nav-link <?= $adminPage === 'messages' ? 'active' : '' ?>" href="messages.php">
+                <i class="bi bi-envelope me-2"></i> Messages
+                <?php if ($unreadMsgCount > 0): ?>
+                <span class="badge bg-danger ms-1"><?= $unreadMsgCount ?></span>
+                <?php endif; ?>
+            </a>
             <hr class="border-secondary mx-3">
             <a class="nav-link" href="../index.php" target="_blank"><i class="bi bi-shop me-2"></i> View Store</a>
             <a class="nav-link" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
