@@ -7,9 +7,9 @@
  *   SESSION_ABSOLUTE_TTL   — maximum session lifetime regardless of activity (default 8 hours)
  *   SESSION_REGEN_INTERVAL — how often the session ID is regenerated (default 5 min)
  */
-define('SESSION_IDLE_TIMEOUT',   defined('SESSION_IDLE_TIMEOUT')   ? SESSION_IDLE_TIMEOUT   : 1800);  // 30 minutes
+define('SESSION_IDLE_TIMEOUT',   defined('SESSION_IDLE_TIMEOUT')   ? SESSION_IDLE_TIMEOUT   : 120);  // 2 minutes
 define('SESSION_ABSOLUTE_TTL',   defined('SESSION_ABSOLUTE_TTL')   ? SESSION_ABSOLUTE_TTL   : 28800); // 8 hours
-define('SESSION_REGEN_INTERVAL', defined('SESSION_REGEN_INTERVAL') ? SESSION_REGEN_INTERVAL : 300);   // 5 minutes
+define('SESSION_REGEN_INTERVAL', defined('SESSION_REGEN_INTERVAL') ? SESSION_REGEN_INTERVAL : 60);   // 1 minute
 
 if (session_status() === PHP_SESSION_NONE) {
     // Apply security cookie params BEFORE session_start() so they take effect.

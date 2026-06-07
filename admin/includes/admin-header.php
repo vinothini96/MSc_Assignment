@@ -35,6 +35,8 @@ if (!$isLoginPage) {
             <a class="nav-link <?= $adminPage === 'categories' ? 'active' : '' ?>" href="categories.php"><i class="bi bi-tags me-2"></i> Categories</a>
             <a class="nav-link <?= $adminPage === 'orders' ? 'active' : '' ?>" href="orders.php"><i class="bi bi-receipt me-2"></i> Orders</a>
             <a class="nav-link <?= $adminPage === 'users' ? 'active' : '' ?>" href="users.php"><i class="bi bi-people me-2"></i> Users</a>
+            <a class="nav-link <?= $adminPage === 'admins' ? 'active' : '' ?>" href="admins.php"><i class="bi bi-shield-lock me-2"></i> Admins</a>
+            <a class="nav-link <?= $adminPage === 'banners' ? 'active' : '' ?>" href="banners.php"><i class="bi bi-images me-2"></i> Banners</a>
             <hr class="border-secondary mx-3">
             <a class="nav-link" href="../index.php" target="_blank"><i class="bi bi-shop me-2"></i> View Store</a>
             <a class="nav-link" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
